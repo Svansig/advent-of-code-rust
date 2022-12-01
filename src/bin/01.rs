@@ -2,7 +2,7 @@ fn get_elf_calories(input: &str) -> Vec<u32> {
     let elves = input.split("\n\n");
     elves
         .map(|elf| {
-            elf.split("\n").fold(0, |total, calories| {
+            elf.split('\n').fold(0, |total, calories| {
                 total + calories.parse::<u32>().unwrap()
             })
         })
