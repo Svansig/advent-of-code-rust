@@ -1,25 +1,59 @@
-fn get_elf_calories(input: &str) -> Vec<u32> {
-    let elves = input.split("\n\n");
-    elves
-        .map(|elf| {
-            elf.split('\n').fold(0, |total, calories| {
-                total + calories.parse::<u32>().unwrap()
+use std::collections::HashMap;
+
+pub fn part_one(input: &str) -> Option<i32> {
+    input.lines().fold(Some(0), |acc, val| {
+        let mut chars = val.chars();
+        let sign: char = chars.next().unwrap();
+        let magnitude: i32 = chars
+            .fold(Some(0), |acc, digit| {
+                Some(acc.unwrap() * 10 + digit.to_digit(10).unwrap() as i32)
             })
-        })
-        .collect()
+            .unwrap();
+        match sign {
+            '-' => Some(acc.unwrap() - magnitude),
+            '+' => Some(acc.unwrap() + magnitude),
+            _ => panic!(
+                "Sign is {} and does not match the two options of + or - ",
+                sign
+            ),
+        }
+    })
 }
 
-pub fn part_one(input: &str) -> Option<u32> {
-    get_elf_calories(input).into_iter().max()
-}
-
-pub fn part_two(input: &str) -> Option<u32> {
-    let mut elf_calories = get_elf_calories(input);
-    elf_calories.sort_by(|a, b| b.cmp(a));
-    elf_calories
-        .into_iter()
-        .take(3)
-        .fold(Some(0), |acc, item| Some(acc.unwrap_or(0) + item))
+pub fn part_two(input: &str) -> Option<i32> {
+    let lines = input.lines();
+    let mut acc: i32 = 0;
+    let mut seen: HashMap<String, bool> = HashMap::new();
+    for line in lines.cycle() {
+        let mut chars = line.chars();
+        let sign: char = chars.next().unwrap();
+        let magnitude: i32 = chars
+            .fold(Some(0), |acc, digit| {
+                Some(acc.unwrap() * 10 + digit.to_digit(10).unwrap() as i32)
+            })
+            .unwrap();
+        let next = match sign {
+            '-' => acc - magnitude,
+            '+' => acc + magnitude,
+            _ => panic!(
+                "Sign is {} and does not match the two options of + or - ",
+                sign
+            ),
+        };
+        let matches = match seen.contains_key(&next.to_string()) {
+            true => Some(next),
+            false => {
+                seen.insert(next.to_string(), true);
+                acc = next;
+                None
+            }
+        };
+        // println!("Value: {}, is seen? {:?}", next, matches);
+        if matches.is_some() {
+            return matches;
+        }
+    }
+    None
 }
 
 fn main() {
@@ -35,12 +69,12 @@ mod tests {
     #[test]
     fn test_part_one() {
         let input = advent_of_code::read_file("examples", 1);
-        assert_eq!(part_one(&input), Some(69281));
+        assert_eq!(part_one(&input), Some(425));
     }
 
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 1);
-        assert_eq!(part_two(&input), Some(201524));
+        assert_eq!(part_two(&input), Some(57538));
     }
 }
