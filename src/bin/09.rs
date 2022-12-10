@@ -142,7 +142,6 @@ impl Knot {
     fn get_num_unique_positions(&mut self) -> u32 {
         self.positions.sort();
         self.positions.dedup();
-        println!("{:?}", self.positions);
         self.positions.len() as u32
     }
 }
@@ -176,6 +175,82 @@ impl MultiGrid {
     }
 }
 
+// Refactor
+
+struct LinkedList {
+    segments: Vec<(i32, i32)>,
+    visited: Vec<(i32, i32)>,
+}
+
+#[derive(Clone, Copy)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    fn new(dir: &str) -> Self {
+        match dir {
+            "U" => Direction::Up,
+            "D" => Direction::Down,
+            "L" => Direction::Left,
+            "R" => Direction::Right,
+            _ => panic!("Failed to parse direction"),
+        }
+    }
+    fn get_move(&self) -> (i32, i32) {
+        match self {
+            Direction::Up => (-1, 0),
+            Direction::Down => (1, 0),
+            Direction::Left => (0, -1),
+            Direction::Right => (0, 1),
+        }
+    }
+}
+
+impl LinkedList {
+    fn new(len: usize) -> Self {
+        Self {
+            segments: vec![(0, 0); len],
+            visited: Vec::new(),
+        }
+    }
+
+    fn make_move(&mut self, dir: &Direction) {
+        let delta = dir.get_move();
+        self.segments[0].0 += delta.0;
+        self.segments[0].1 += delta.1;
+
+        for i in 1..self.segments.len() {
+            let prev = self.segments[i - 1];
+            let current = self.segments[i];
+            let row_diff = prev.0 - current.0;
+            let col_diff = prev.1 - current.1;
+
+            if row_diff.abs() > 1 || col_diff.abs() > 1 {
+                if row_diff != 0 {
+                    self.segments[i].0 += row_diff.signum();
+                }
+                if col_diff != 0 {
+                    self.segments[i].1 += col_diff.signum();
+                }
+            } else {
+                break;
+            }
+            if i == self.segments.len() - 1 {
+                self.visited.push(self.segments[i]);
+            }
+        }
+    }
+    fn get_num_unique_positions(&mut self) -> u32 {
+        self.visited.sort();
+        self.visited.dedup();
+        self.visited.len() as u32
+    }
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
     let mut grid = Grid::default();
     let lines = input.lines();
@@ -192,6 +267,19 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(grid.tail.get_num_unique_positions())
 }
 
+pub fn part_one_redux(input: &str) -> Option<u32> {
+    let mut linked_list = LinkedList::new(2);
+
+    for line in input.lines() {
+        let (direction, magnitude) = line.split_once(" ").unwrap();
+        let dir = Direction::new(direction);
+        for _ in 0..magnitude.parse().unwrap() {
+            linked_list.make_move(&dir);
+        }
+    }
+    Some(linked_list.get_num_unique_positions())
+}
+
 pub fn part_two(input: &str) -> Option<u32> {
     let mut grid = MultiGrid::default();
     let lines = input.lines();
@@ -204,11 +292,25 @@ pub fn part_two(input: &str) -> Option<u32> {
 
     Some(grid.get_num_unique_positions())
 }
+pub fn part_two_redux(input: &str) -> Option<u32> {
+    let mut linked_list = LinkedList::new(10);
+
+    for line in input.lines() {
+        let (direction, magnitude) = line.split_once(" ").unwrap();
+        let dir = Direction::new(direction);
+        for _ in 0..magnitude.parse().unwrap() {
+            linked_list.make_move(&dir);
+        }
+    }
+    Some(linked_list.get_num_unique_positions())
+}
 
 fn main() {
     let input = &advent_of_code::read_file("inputs", 9);
     advent_of_code::solve!(1, part_one, input);
+    advent_of_code::solve!(1, part_one_redux, input);
     advent_of_code::solve!(2, part_two, input);
+    advent_of_code::solve!(2, part_two_redux, input);
 }
 
 #[cfg(test)]
